@@ -23,6 +23,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, nullable=False, index=True, unique=True)
     full_name: Mapped[str] = mapped_column(String, nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False)
+    phone: Mapped[str] = mapped_column(String, nullable=True)
+    avatar_url: Mapped[str] = mapped_column(String, nullable=True)
     role: Mapped[UserRole]= mapped_column(Enum(UserRole), default=UserRole.CUSTOMER)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -33,6 +35,7 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, index=True)
     image_url: Mapped[str] = mapped_column(String, nullable=True)
+
     products: Mapped[list["Product"]] = relationship(back_populates="category")
 
 class Product(Base):
@@ -46,6 +49,8 @@ class Product(Base):
     image_url: Mapped[str] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+
+    category: Mapped["Category"] = relationship(back_populates="products")
 
 class CartItem(Base):
     __tablename__ = "cart_items"
