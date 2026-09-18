@@ -18,10 +18,10 @@ router = APIRouter(
 @router.get("", response_model=PaginationProductResponse)
 async def list_products(
     search: str | None = Query(None, description = "Search across name and description"),
-    category_id: id | None = Query(None, description="Filter by category"),
+    category_id: int | None = Query(None, description="Filter by category"),
     min_price: Decimal | None = Query(None, ge=0, description="Minimum price of products"),
     max_price: Decimal | None = Query(None, ge=0, description="Maximum price of products"),
-    sort: str = Query("newest", regex="^(newest|price_asc|price_desc)$"),
+    sort: str = Query("newest", pattern="^(newest|price_asc|price_desc)$"),
     page: int = Query(1, ge=0, description="Total Number of pages"),
     page_size: int = Query(12, ge=0, le=100, description="Products per Page"),
     is_active: bool | None = Query(None, description="Filter featured products"),
@@ -85,7 +85,14 @@ async def get_product_details(id: int, db: AsyncSession = Depends(get_db)):
         .where(Product.id == id, Product.is_active.is_(True))
         .options(
             selectinload(Product.category),
-            selectinload(Product)
+            selectinload(Product.reviews)
         )
     )
+    result = await db.execute(stmt)
+    product = result.scalar_one_or_none()
+
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product Details Not Found")
+
+    return product
 

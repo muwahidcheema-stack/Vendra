@@ -44,3 +44,16 @@ class PaginationProductResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+class CategoryBase(BaseModel):
+    name: str
+    slug: str
+    img_url: str | None = None
+
+class CategoryCreate(CategoryBase):
+    pass
+
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    slug: str | None = None
+    img_url: str | None = None

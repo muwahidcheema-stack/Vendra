@@ -29,7 +29,7 @@ class User(Base):
     role: Mapped[UserRole]= mapped_column(Enum(UserRole), default=UserRole.CUSTOMER)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    orders: Mapped[list[Order]] = relationship(back_populates="user")
+    orders: Mapped[list["Order"]] = relationship(back_populates="user")
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     wishlist_items: Mapped[list["WishList"]] = relationship(back_populates="user" , cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user", cascade="all, delete-orphan",)
@@ -53,7 +53,7 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
@@ -69,32 +69,32 @@ class CartItem(Base):
     __tablename__ = "cart_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
-    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="cart_items")
     product: Mapped["Product"] = relationship()
 
     __table_args__ = (
         UniqueConstraint("user_id", "product_id", name="uq_cart_user_product",),
-        CheckConstraint("quantity > 0" , name="check_cart_quantity_positive")
+        CheckConstraint("quantity > 0" , name="check_cart_quantity_positive"),
     )
 
 class WishList(Base):
     __tablename__ = "wishlists"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="wishlists")
     product: Mapped["Product"] = relationship()
 
     __table_args__ = (
-        UniqueConstraint("user_id", "product_id", name="uq_wishlist_user_product",)
+        UniqueConstraint("user_id", "product_id", name="uq_wishlist_user_product"),
     )
 
 class Order(Base):
@@ -104,19 +104,19 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     shipping_address: Mapped[str] = mapped_column(Text, nullable=False)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10,2), nullable=False)
-    payment_method: Mapped[str] = mapped_column(String, default="COD")
-    status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING)
+    payment_method: Mapped[str] = mapped_column(String, default="COD", nullable=False)
+    status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 class OrderItem(Base):
     __tablename__ = "order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, index=True)
-    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"))
-    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)    
     price: Mapped[Decimal] = mapped_column(Numeric(10,2), nullable=False)
@@ -125,22 +125,22 @@ class OrderItem(Base):
     order: Mapped["Order"] = relationship(back_populates = "items")
 
     __table_args__ = (
-        CheckConstraint("quantity > 0", name="check_order_item_quantity_positive",)
+        CheckConstraint("quantity > 0", name="check_order_item_quantity_positive"),
     )
 
 class Review(Base):
     __tablename__ = "reviews"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
-    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True, nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text,nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     product: Mapped["Product"] = relationship(back_populates="reviews")
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="reviews")
     order: Mapped["Order"] = relationship()
 
     __table_args__ = (

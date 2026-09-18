@@ -1,28 +1,3 @@
-# from typing import AsyncGenerator
-# from sqlalchemy import create_async_engine
-# from sqlalchemy.orm import sessionmaker, DeclarativeBase
-# from sqlalchemy.ext.declarative import declarative_base
-# from .config import settings
-
-# database_url = settings.DATABASE_URL
-
-# engine = create_async_engine(database_url)
-
-# session_local = sessionmaker(autocommit = False, autoflush=False, bind=engine)
-
-# Base = declarative_base()
-
-# class Base(DeclarativeBase):
-#     pass
-
-# async def get_db():
-#     db = session_local()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-
-# app/core/database.py
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
