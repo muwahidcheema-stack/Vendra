@@ -90,7 +90,7 @@ class WishList(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="wishlists")
+    user: Mapped["User"] = relationship(back_populates="wishlist_items")
     product: Mapped["Product"] = relationship()
 
     __table_args__ = (

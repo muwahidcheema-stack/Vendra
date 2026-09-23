@@ -95,4 +95,3 @@ async def get_product_details(id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product Details Not Found")
 
     return product
-
