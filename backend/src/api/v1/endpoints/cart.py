@@ -9,13 +9,13 @@ from ....models.models import User, CartItem, Product
 from ....schemas.cart_schemas import CartItemResponse, CartProductResponse, CartItemBase, CartItemCreate, CartItemUpdate, CartResponse
 
 router = APIRouter(
-    tags= "Cart",
-    prefix=['cart']
+    prefix="/cart",
+    tags=["Cart"]
 )
 
 async def build_cart_response(user_id: int, db: AsyncSession) -> CartResponse:
     stmt = (
-        select(CartItem).where(CartItem.user_id == user_id).options(select(CartItem.product)).order_by(CartItem.id.asc())
+        select(CartItem).where(CartItem.user_id == user_id).options(selectinload(CartItem.product)).order_by(CartItem.id.asc())
     )
     result = (await db.execute(stmt))
     cart_items = result.scalars().all()
@@ -55,10 +55,10 @@ async def get_user_cart(
 @router.post("/items", response_model=CartResponse, status_code=status.HTTP_201_CREATED)
 async def add_item_to_cart(
     item_in: CartItemCreate,
-    current_user: User = Depends(get_db),
-    db: AsyncSession = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    product_stmt = select(Product).where(Product.id == item_in.id)
+    product_stmt = select(Product).where(Product.id == item_in.product_id)
     product = (await db.execute(product_stmt)).scalar_one_or_none()
     if not product or not product.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This product is not available")
@@ -79,6 +79,39 @@ async def add_item_to_cart(
         )
         db.add(new_item)
     await db.commit()
-    return build_cart_response(current_user.id, db)
+    return await build_cart_response(current_user.id, db)
 
-# @router.put("/items/{item_id}" , response_model=CartResponse)
+@router.put("/items/{item_id}" , response_model=CartResponse)
+async def update_cart_item(
+    item_id : int,
+    item_in: CartItemUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(CartItem).where(CartItem.user_id == current_user.id, CartItem.id == item_id).options(selectinload(CartItem.product))
+    )
+    cart_item = (await db.execute(stmt)).scalar_one_or_none()
+    if not cart_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart Item not Found")
+    if item_in.quantity > cart_item.product.stock:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart Item is not available in this quantity")
+    cart_item.quantity = item_in.quantity
+    await db.commit()
+    return await build_cart_response(current_user.id, db)
+
+@router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_cart_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(CartItem).where(CartItem.user_id == current_user.id, CartItem.id == item_id)
+    )
+    cart_item = (await db.execute(stmt)).scalar_one_or_none()
+    if not cart_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product with this Id is not found")
+    await db.delete(cart_item)
+    await db.commit()
+    return await build_cart_response(current_user.id , db)

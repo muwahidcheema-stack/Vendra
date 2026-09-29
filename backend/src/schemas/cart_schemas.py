@@ -28,7 +28,7 @@ class CartItemResponse(BaseModel):
     quantity: int
     created_at: datetime
     product: CartProductResponse
-    subtotal: int
+    subtotal: Decimal
 
     model_config = ConfigDict(from_attributes=True)
 
