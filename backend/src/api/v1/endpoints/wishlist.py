@@ -19,7 +19,7 @@ async def get_user_wishlist(
     db: AsyncSession = Depends(get_db)
 ):
     stmt = (
-        select(WishList).where(WishList.user_id == current_user.id).options(selectinload(WishList.product())).order_by(WishList.created_at.desc())
+        select(WishList).where(WishList.user_id == current_user.id).options(selectinload(WishList.product)).order_by(WishList.created_at.desc())
     )
     wishlist = (await db.execute(stmt)).scalars().all()
     if not wishlist:
@@ -51,3 +51,17 @@ async def add_to_wishlist(
 
     refresh_stmt = select(WishList).where(WishList.id == new_item.id).options(selectinload(WishList.product))
     return (await db.execute(refresh_stmt)).scalar_one()
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_from_wishlist(
+    product_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(WishList).where(WishList.user_id == current_user.id, WishList.product_id == product_id)
+    item = (await db.execute(stmt)).scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This Product doesn't exist in your wishlist")
+    await db.delete(item)
+    await db.commit()
+    return None
