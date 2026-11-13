@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import ConfigDict, BaseModel, Field
 from decimal import Decimal
+from ..models.models import OrderStatus
 
 class OrderItemResponse(BaseModel):
     id: int
@@ -44,3 +45,6 @@ class PaginatedOrderResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+class OrderStatusUpdate(BaseModel):
+    status: OrderStatus
