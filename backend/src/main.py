@@ -1,7 +1,24 @@
 from fastapi import FastAPI
-from .api.v1.endpoints import auth,categories,products, cart, wishlist, orders, admin_orders
+from pathlib import Path
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from .api.v1.endpoints import auth,categories,products, cart, wishlist, orders, admin_orders, uploads
 
 app = FastAPI(title="Vendra API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+(STATIC_DIR / "uploads").mkdir(parents=True, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
@@ -10,6 +27,7 @@ app.include_router(cart.router, prefix="/api/v1")
 app.include_router(wishlist.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
 app.include_router(admin_orders.router, prefix="/api/v1")
+app.include_router(uploads.router, prefix="/api/v1")
 
 @app.get('/')
 def home():
