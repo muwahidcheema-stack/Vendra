@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from .api.v1.endpoints import auth,categories,products, cart, wishlist, orders, admin_orders, uploads
+from .api.v1.endpoints import auth,categories,products, cart, wishlist, orders, admin_orders, uploads, dashboard
 
 app = FastAPI(title="Vendra API", version="1.0.0")
 
@@ -28,6 +28,8 @@ app.include_router(wishlist.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
 app.include_router(admin_orders.router, prefix="/api/v1")
 app.include_router(uploads.router, prefix="/api/v1")
+app.include_router(uploads.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
 
 @app.get('/')
 def home():
